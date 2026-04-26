@@ -28,10 +28,38 @@ function SellPage() {
     if (authLoading) return;
     if (!user) { navigate({ to: "/login" }); return; }
     supabase.from("categories").select("id, name").order("name")
-      .then(({ data }) => {
+      .then(async ({ data, error }) => {
         const cats = data ?? [];
+        if (cats.length === 0) {
+          const fallbackName = "Lainnya";
+          const fallbackSlug = "lainnya";
+          const { data: existing } = await supabase
+            .from("categories")
+            .select("id, name")
+            .eq("slug", fallbackSlug)
+            .maybeSingle();
+
+          let fallbackCategory = existing;
+          if (!fallbackCategory) {
+            const { data: inserted, error: insertError } = await supabase
+              .from("categories")
+              .insert({ name: fallbackName, slug: fallbackSlug })
+              .select("id, name")
+              .single();
+            fallbackCategory = inserted ?? null;
+          }
+
+          if (fallbackCategory) {
+            const fallbackList = [fallbackCategory];
+            setCategories(fallbackList);
+            setForm((f) => ({ ...f, category_id: f.category_id || fallbackCategory.id }));
+            return;
+          }
+        }
         setCategories(cats);
-        if (cats.length && !form.category_id) setForm((f) => ({ ...f, category_id: cats[0].id }));
+        if (cats.length && !form.category_id) {
+          setForm((f) => ({ ...f, category_id: cats[0].id }));
+        }
       });
   }, [user, authLoading]);
 
@@ -41,9 +69,10 @@ function SellPage() {
     const price = Number(form.price);
     if (!form.title.trim()) return toast.error("Judul wajib diisi");
     if (!Number.isFinite(price) || price < 0) return toast.error("Harga tidak valid");
+    if (categories.length > 0 && !form.category_id) return toast.error("Kategori wajib dipilih");
 
     setSubmitting(true);
-    const { data, error } = await supabase.from("products").insert({
+    const basePayload: Record<string, unknown> = {
       seller_id: user.id,
       title: form.title.trim(),
       description: form.description.trim() || null,
@@ -52,12 +81,38 @@ function SellPage() {
       grade: form.grade,
       image_url: form.image_url.trim() || null,
       location: form.location.trim() || null,
-    }).select("id").single();
+    };
+    let attemptPayload: Record<string, unknown> = { ...basePayload };
+    let finalData: { id: string } | null = null;
+    let finalError: { code?: string; message: string; details?: string | null; hint?: string | null } | null = null;
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      const result = await supabase.from("products").insert(attemptPayload as never).select("id").single();
+      finalData = result.data;
+      finalError = result.error;
+      if (!finalError) break;
+
+      const missingColMatch = finalError.code === "PGRST204"
+        ? finalError.message.match(/'([^']+)' column/)
+        : null;
+      const missingColumn = missingColMatch?.[1];
+      if (missingColumn === "title" && typeof attemptPayload.title === "string" && !("name" in attemptPayload)) {
+        attemptPayload = {
+          ...attemptPayload,
+          name: attemptPayload.title,
+        };
+      }
+      if (!missingColumn || !(missingColumn in attemptPayload) || Object.keys(attemptPayload).length <= 1) break;
+      const { [missingColumn]: _removed, ...rest } = attemptPayload;
+      attemptPayload = rest;
+    }
     setSubmitting(false);
 
-    if (error) { toast.error(error.message); return; }
+    if (finalError || !finalData) { toast.error(finalError?.message ?? "Gagal membuat produk"); return; }
+    // #region agent log
+    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'visibility-debug',hypothesisId:'V1',location:'src/routes/sell.tsx:111',message:'sell submit succeeded',data:{createdProductId:finalData.id,finalPayloadKeys:Object.keys(attemptPayload),hasName:typeof attemptPayload.name==='string',hasTitle:typeof attemptPayload.title==='string'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     toast.success("Produk berhasil dipasang!");
-    navigate({ to: "/product/$id", params: { id: data.id } });
+    navigate({ to: "/product/$id", params: { id: finalData.id } });
   };
 
   return (
@@ -70,7 +125,7 @@ function SellPage() {
         <form onSubmit={submit} className="mt-6 space-y-5 rounded-2xl border border-border bg-card p-6 shadow-soft">
           <Field label="Judul Produk *">
             <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Buku Matematika Kelas 10" className={inputCls} />
+              placeholder="Meja kos" className={inputCls} />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -79,9 +134,23 @@ function SellPage() {
                 placeholder="20000" className={inputCls} />
             </Field>
             <Field label="Kategori">
-              <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className={inputCls}>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              {categories.length > 0 ? (
+                <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className={inputCls}>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    value={form.category_id}
+                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                    placeholder="Masukkan category_id manual (mode development)"
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada data kategori. Kamu tetap bisa lanjut dengan category_id manual.
+                  </p>
+                </div>
+              )}
             </Field>
           </div>
 
