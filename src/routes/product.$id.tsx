@@ -38,8 +38,34 @@ function ProductDetail() {
       .select("id, title, description, price, grade, image_url, location, seller_id, seller:profiles!products_seller_id_fkey(id, display_name, username, is_verified, rating, avatar_url), category:categories(name)")
       .eq("id", id)
       .maybeSingle()
-      .then(({ data }) => {
-        setProduct(data as unknown as ProductFull);
+      .then(async ({ data, error }) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'visibility-debug',hypothesisId:'V3',location:'src/routes/product.$id.tsx:41',message:'product detail query resolved',data:{attempt:'primary',requestedId:id,hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,hasData:Boolean(data),dataId:data?.id ?? null,dataTitle:data?.title ?? null},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        let finalData = data as unknown as ProductFull | null;
+        if (error?.code === "PGRST200" && error.message.includes("between 'products' and 'profiles'")) {
+          const fallback = await supabase
+            .from("products")
+            .select("id, title:name, description, price, image_url")
+            .eq("id", id)
+            .maybeSingle();
+          // #region agent log
+          fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'visibility-debug',hypothesisId:'V4',location:'src/routes/product.$id.tsx:50',message:'product detail fallback query resolved',data:{attempt:'fallback-no-relations',requestedId:id,hasError:Boolean(fallback.error),errorCode:fallback.error?.code ?? null,errorMessage:fallback.error?.message ?? null,hasData:Boolean(fallback.data),dataId:fallback.data?.id ?? null,dataTitle:(fallback.data as { title?: string } | null)?.title ?? null},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
+          finalData = fallback.data ? {
+            id: fallback.data.id,
+            title: (fallback.data as { title?: string }).title ?? "Produk",
+            description: (fallback.data as { description?: string | null }).description ?? null,
+            price: (fallback.data as { price?: number }).price ?? 0,
+            grade: "bekas_baik",
+            image_url: (fallback.data as { image_url?: string | null }).image_url ?? null,
+            location: null,
+            seller_id: "",
+            seller: null,
+            category: null,
+          } : null;
+        }
+        setProduct(finalData);
         setLoading(false);
       });
   }, [id]);
@@ -53,8 +79,22 @@ function ProductDetail() {
       { user_id: user.id, product_id: product.id, quantity: 1 },
       { onConflict: "user_id,product_id" }
     );
+    // #region agent log
+    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K1',location:'src/routes/product.$id.tsx:82',message:'add to cart upsert resolved',data:{productId:product.id,hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,errorDetails:error?.details ?? null,errorHint:error?.hint ?? null,targetTable:'cart_items'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    let finalError = error;
+    if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
+      const fallback = await supabase.from("chart_items").upsert(
+        { user_id: user.id, product_id: product.id, quantity: 1 } as never,
+        { onConflict: "user_id,product_id" }
+      );
+      finalError = fallback.error;
+      // #region agent log
+      fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K4',location:'src/routes/product.$id.tsx:90',message:'add to cart fallback upsert resolved',data:{productId:product.id,hasError:Boolean(fallback.error),errorCode:fallback.error?.code ?? null,errorMessage:fallback.error?.message ?? null,targetTable:'chart_items'},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+    }
     setAdding(false);
-    if (error) { toast.error(error.message); return; }
+    if (finalError) { toast.error(finalError.message); return; }
     toast.success("Ditambahkan ke keranjang!");
   };
 

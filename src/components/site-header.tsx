@@ -22,7 +22,22 @@ export function SiteHeader() {
     supabase.from("profiles").select("display_name, location").eq("id", user.id).maybeSingle()
       .then(({ data }) => setProfile(data));
     supabase.from("cart_items").select("id", { count: "exact", head: true }).eq("user_id", user.id)
-      .then(({ count }) => setCartCount(count ?? 0));
+      .then(({ count, error }) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K2',location:'src/components/site-header.tsx:25',message:'header cart count query resolved',data:{hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,errorDetails:error?.details ?? null,errorHint:error?.hint ?? null,count:count ?? 0,targetTable:'cart_items'},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
+          supabase.from("chart_items").select("id", { count: "exact", head: true }).eq("user_id", user.id)
+            .then(({ count: fallbackCount, error: fallbackError }) => {
+              // #region agent log
+              fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K4',location:'src/components/site-header.tsx:31',message:'header cart count fallback query resolved',data:{hasError:Boolean(fallbackError),errorCode:fallbackError?.code ?? null,errorMessage:fallbackError?.message ?? null,count:fallbackCount ?? 0,targetTable:'chart_items'},timestamp:Date.now()})}).catch(()=>{});
+              // #endregion
+              setCartCount(fallbackCount ?? 0);
+            });
+          return;
+        }
+        setCartCount(count ?? 0);
+      });
   }, [user, routerState.location.pathname]);
 
   const handleSearch = (e: React.FormEvent) => {

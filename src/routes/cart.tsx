@@ -36,22 +36,49 @@ function CartPage() {
   const refresh = async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
+    let { data, error } = await supabase
       .from("cart_items")
       .select("id, quantity, product:products(id, title, price, image_url)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
+    // #region agent log
+    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K3',location:'src/routes/cart.tsx:44',message:'cart refresh query resolved',data:{hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,errorDetails:error?.details ?? null,errorHint:error?.hint ?? null,rowsCount:(data ?? []).length,targetTable:'cart_items'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
+      const fallback = await supabase
+        .from("chart_items")
+        .select("id, quantity, product:products(id, title:name, price, image_url)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      data = fallback.data as typeof data;
+      error = fallback.error;
+      // #region agent log
+      fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K4',location:'src/routes/cart.tsx:54',message:'cart refresh fallback query resolved',data:{hasError:Boolean(fallback.error),errorCode:fallback.error?.code ?? null,errorMessage:fallback.error?.message ?? null,rowsCount:(fallback.data ?? []).length,targetTable:'chart_items'},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+    }
     setItems((data ?? []) as unknown as CartRow[]);
     setLoading(false);
   };
 
   const changeQty = async (rowId: string, qty: number) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'security-audit',hypothesisId:'S1',location:'src/routes/cart.tsx:49',message:'changeQty called',data:{hasUser:Boolean(user),rowId,qty},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     if (qty < 1) return;
-    await supabase.from("cart_items").update({ quantity: qty }).eq("id", rowId);
+    const { error } = await supabase.from("cart_items").update({ quantity: qty }).eq("id", rowId);
+    if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
+      await supabase.from("chart_items").update({ quantity: qty } as never).eq("id", rowId);
+    }
     refresh();
   };
   const remove = async (rowId: string) => {
-    await supabase.from("cart_items").delete().eq("id", rowId);
+    // #region agent log
+    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'security-audit',hypothesisId:'S1',location:'src/routes/cart.tsx:55',message:'remove called',data:{hasUser:Boolean(user),rowId},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    const { error } = await supabase.from("cart_items").delete().eq("id", rowId);
+    if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
+      await supabase.from("chart_items").delete().eq("id", rowId);
+    }
     toast.success("Dihapus dari keranjang");
     refresh();
   };

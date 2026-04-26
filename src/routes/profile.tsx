@@ -13,7 +13,7 @@ export const Route = createFileRoute("/profile")({ component: ProfilePage });
 interface ProfileData {
   id: string;
   username: string;
-  display_name: string;
+  display_name?: string | null;
   bio: string | null;
   location: string | null;
   is_verified: boolean;
@@ -36,7 +36,7 @@ function ProfilePage() {
       .then(({ data }) => {
         if (data) {
           setProfile(data as ProfileData);
-          setForm({ display_name: data.display_name, bio: data.bio ?? "", location: data.location ?? "" });
+          setForm({ display_name: data.display_name ?? data.username ?? "", bio: data.bio ?? "", location: data.location ?? "" });
         }
       });
     supabase.from("products")
@@ -65,6 +65,10 @@ function ProfilePage() {
     );
   }
 
+  const safeDisplayName = (profile.display_name ?? profile.username ?? "").trim();
+  const displayNameForUi = safeDisplayName.length > 0 ? safeDisplayName : "User";
+  const avatarInitial = displayNameForUi.charAt(0).toUpperCase();
+
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -72,12 +76,12 @@ function ProfilePage() {
         <div className="rounded-3xl border border-border bg-gradient-cream p-6 shadow-soft md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-warm font-display text-3xl font-bold text-accent-foreground shadow-warm">
-              {profile.display_name.charAt(0).toUpperCase()}
+              {avatarInitial}
             </div>
             <div className="flex-1">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Hello,</p>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-bold text-primary">{profile.display_name}</h1>
+                <h1 className="font-display text-3xl font-bold text-primary">{displayNameForUi}</h1>
                 {profile.is_verified && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-trust px-2 py-0.5 text-xs font-medium text-trust-foreground">
                     <ShieldCheck className="h-3 w-3" /> Terpercaya
