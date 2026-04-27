@@ -7,6 +7,10 @@ export function formatRupiah(value: number): string {
   }).format(value);
 }
 
+export function formatNumberWithDots(value: number): string {
+  return value.toLocaleString("id-ID");
+}
+
 export const GRADE_LABEL: Record<string, string> = {
   baru: "Baru",
   seperti_baru: "Seperti Baru",

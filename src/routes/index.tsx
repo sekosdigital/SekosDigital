@@ -10,8 +10,20 @@ import { useNavigate } from "@tanstack/react-router";
 import heroImg from "@/assets/sekos-hero.jpg";
 import promoImg from "@/assets/sekos-promo.jpg";
 import {
-  ShieldCheck, Sparkles, ArrowRight, Truck, BadgeCheck, Headphones,
-  BookOpen, PencilLine, Shirt, Backpack, Cpu, Package, X, SlidersHorizontal,
+  ShieldCheck,
+  Sparkles,
+  ArrowRight,
+  Truck,
+  BadgeCheck,
+  Headphones,
+  BookOpen,
+  PencilLine,
+  Shirt,
+  Backpack,
+  Cpu,
+  Package,
+  X,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -28,7 +40,11 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-interface Category { id: string; name: string; slug: string }
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 const CAT_ICONS: Record<string, LucideIcon> = {
   buku: BookOpen,
@@ -50,7 +66,10 @@ function HomePage() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    supabase.from("categories").select("id, name, slug").order("name")
+    supabase
+      .from("categories")
+      .select("id, name, slug")
+      .order("name")
       .then(({ data }) => setCategories(data ?? []));
   }, []);
 
@@ -58,7 +77,9 @@ function HomePage() {
     setLoading(true);
     let query = supabase
       .from("products")
-      .select("id, title, price, grade, image_url, location, category_id, seller:profiles!products_seller_id_fkey(display_name, is_verified)")
+      .select(
+        "id, title, price, grade, image_url, location, category_id, seller:profiles!products_seller_id_fkey(display_name, is_verified)",
+      )
       .eq("is_active", true);
 
     if (search.q) query = query.ilike("title", `%${search.q}%`);
@@ -74,18 +95,68 @@ function HomePage() {
 
     query.limit(60).then(async ({ data, error }) => {
       // #region agent log
-      fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'visibility-debug',hypothesisId:'V2',location:'src/routes/index.tsx:75',message:'home products query resolved',data:{attempt:'primary',hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,rowsCount:(data ?? []).length,firstId:data?.[0]?.id ?? null,firstTitle:data?.[0]?.title ?? null},timestamp:Date.now()})}).catch(()=>{});
+      fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+        body: JSON.stringify({
+          sessionId: "186559",
+          runId: "visibility-debug",
+          hypothesisId: "V2",
+          location: "src/routes/index.tsx:75",
+          message: "home products query resolved",
+          data: {
+            attempt: "primary",
+            hasError: Boolean(error),
+            errorCode: error?.code ?? null,
+            errorMessage: error?.message ?? null,
+            rowsCount: (data ?? []).length,
+            firstId: data?.[0]?.id ?? null,
+            firstTitle: data?.[0]?.title ?? null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
       // #endregion
       let finalRows = (data ?? []) as unknown as ProductCardData[];
-      if (error?.code === "PGRST200" && error.message.includes("between 'products' and 'profiles'")) {
+      if (
+        error?.code === "PGRST200" &&
+        error.message.includes("between 'products' and 'profiles'")
+      ) {
         const fallback = await supabase
           .from("products")
           .select("id, title:name, price, image_url")
           .limit(60);
         // #region agent log
-        fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'visibility-debug',hypothesisId:'V4',location:'src/routes/index.tsx:84',message:'home products fallback query resolved',data:{attempt:'fallback-no-relations',hasError:Boolean(fallback.error),errorCode:fallback.error?.code ?? null,errorMessage:fallback.error?.message ?? null,rowsCount:(fallback.data ?? []).length,firstId:fallback.data?.[0]?.id ?? null,firstTitle:(fallback.data?.[0] as { title?: string } | undefined)?.title ?? null},timestamp:Date.now()})}).catch(()=>{});
+        fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+          body: JSON.stringify({
+            sessionId: "186559",
+            runId: "visibility-debug",
+            hypothesisId: "V4",
+            location: "src/routes/index.tsx:84",
+            message: "home products fallback query resolved",
+            data: {
+              attempt: "fallback-no-relations",
+              hasError: Boolean(fallback.error),
+              errorCode: fallback.error?.code ?? null,
+              errorMessage: fallback.error?.message ?? null,
+              rowsCount: (fallback.data ?? []).length,
+              firstId: fallback.data?.[0]?.id ?? null,
+              firstTitle: (fallback.data?.[0] as { title?: string } | undefined)?.title ?? null,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
         // #endregion
-        finalRows = ((fallback.data ?? []) as Array<{ id: string; title?: string; price?: number; image_url?: string | null }>).map((row) => ({
+        finalRows = (
+          (fallback.data ?? []) as Array<{
+            id: string;
+            title?: string;
+            price?: number;
+            image_url?: string | null;
+          }>
+        ).map((row) => ({
           id: row.id,
           title: row.title ?? "Produk",
           price: row.price ?? 0,
@@ -106,29 +177,40 @@ function HomePage() {
   const setSort = (sort: "terbaru" | "termurah" | "termahal") =>
     navigate({ to: "/", search: (prev: SearchT) => ({ ...prev, sort }) });
   const applyPrice = () => {
-    navigate({ to: "/", search: (prev: SearchT) => ({
-      ...prev,
-      min: minInput ? Number(minInput) : undefined,
-      max: maxInput ? Number(maxInput) : undefined,
-    }) });
+    navigate({
+      to: "/",
+      search: (prev: SearchT) => ({
+        ...prev,
+        min: minInput ? Number(minInput) : undefined,
+        max: maxInput ? Number(maxInput) : undefined,
+      }),
+    });
     setShowFilters(false);
   };
   const resetFilters = () => {
-    setMinInput(""); setMaxInput("");
+    setMinInput("");
+    setMaxInput("");
     navigate({ to: "/", search: {} });
   };
 
   const activeSort = search.sort ?? "terbaru";
-  const showHero = useMemo(() =>
-    !search.q && !search.kategori && search.min === undefined && search.max === undefined,
-    [search]
+  const showHero = useMemo(
+    () => !search.q && !search.kategori && search.min === undefined && search.max === undefined,
+    [search],
   );
-  const hasFilters = !!(search.q || search.kategori || search.min !== undefined || search.max !== undefined);
+  const hasFilters = !!(
+    search.q ||
+    search.kategori ||
+    search.min !== undefined ||
+    search.max !== undefined
+  );
 
   return (
     <div className="min-h-screen bg-[#FDF6E3]">
       {/* SUNTIKAN WARNA DARI LOGO SEKOS */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         :root {
           /* Warna Navy (Utama) */
           --primary: 207 38% 28%; 
@@ -153,7 +235,9 @@ function HomePage() {
           background-color: #FDF6E3 !important;
           color: #2D4B63 !important;
         }
-      `}} />
+      `,
+        }}
+      />
 
       <SiteHeader />
 
@@ -167,27 +251,51 @@ function HomePage() {
                   <Sparkles className="h-3.5 w-3.5" /> Marketplace pelajar #1 di Indonesia
                 </span>
                 <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] text-[#2D4B63] md:text-5xl lg:text-6xl">
-                  Belanja kebutuhan KOS, <span className="text-[#E6A05D]">lebih hemat & terpercaya.</span>
+                  Belanja kebutuhan KOS,{" "}
+                  <span className="text-[#E6A05D]">lebih hemat & terpercaya.</span>
                 </h1>
                 <p className="mt-4 max-w-md text-[#2D4B63]/70 md:text-lg">
                   Buku bekas, alat tulis, meja, hingga elektronik — dari ribuan pelajar/mahasiswa.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Button asChild size="lg" className="bg-[#E6A05D] text-white hover:bg-[#d48f4d] border-none shadow-md">
-                    <Link to="/register">Mulai Belanja <ArrowRight className="h-4 w-4" /></Link>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-[#E6A05D] text-white hover:bg-[#d48f4d] border-none shadow-md"
+                  >
+                    <Link to="/register">
+                      Mulai Belanja <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </Button>
-                  <Button asChild size="lg" variant="outline" className="border-[#2D4B63] text-[#2D4B63] hover:bg-[#2D4B63]/10">
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-[#2D4B63] text-[#2D4B63] hover:bg-[#2D4B63]/10"
+                  >
                     <Link to="/sell">Jual Barangmu</Link>
                   </Button>
                 </div>
                 <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[#2D4B63]/70">
-                  <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-[#709797]" /> Penjual terverifikasi</span>
-                  <span className="inline-flex items-center gap-1.5"><Truck className="h-4 w-4 text-[#E6A05D]" /> Cek COD sekitar</span>
-                  <span className="inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-[#709797]" /> Harga pelajar</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 text-[#709797]" /> Penjual terverifikasi
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Truck className="h-4 w-4 text-[#E6A05D]" /> Cek COD sekitar
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <BadgeCheck className="h-4 w-4 text-[#709797]" /> Harga pelajar
+                  </span>
                 </div>
               </div>
               <div className="relative">
-                <img src={heroImg} alt="Keranjang berisi buku, topi wisuda, dan laptop" width={1280} height={960} className="mx-auto w-full max-w-md drop-shadow-2xl" />
+                <img
+                  src={heroImg}
+                  alt="Keranjang berisi buku, topi wisuda, dan laptop"
+                  width={1280}
+                  height={960}
+                  className="mx-auto w-full max-w-md drop-shadow-2xl"
+                />
               </div>
             </div>
           </section>
@@ -195,8 +303,12 @@ function HomePage() {
           {/* CATEGORY CHIPS */}
           <section className="container mx-auto px-4 pt-8">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold text-[#2D4B63] md:text-2xl">Jelajahi Kategori</h2>
-              <Link to="/" className="text-xs font-medium text-[#E6A05D] hover:underline">Lihat semua →</Link>
+              <h2 className="font-display text-xl font-bold text-[#2D4B63] md:text-2xl">
+                Jelajahi Kategori
+              </h2>
+              <Link to="/" className="text-xs font-medium text-[#E6A05D] hover:underline">
+                Lihat semua →
+              </Link>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-6">
               {categories.map((c) => {
@@ -220,14 +332,31 @@ function HomePage() {
           {/* PROMO BANNER */}
           <section className="container mx-auto px-4 pt-8">
             <div className="relative overflow-hidden rounded-3xl border border-[#2D4B63]/10 shadow-sm">
-              <img src={promoImg} alt="Promo musim sekolah baru" className="h-44 w-full object-cover md:h-56" loading="lazy" />
+              <img
+                src={promoImg}
+                alt="Promo musim sekolah baru"
+                className="h-44 w-full object-cover md:h-56"
+                loading="lazy"
+              />
               <div className="absolute inset-0 flex items-center bg-gradient-to-r from-[#2D4B63] via-[#2D4B63]/70 to-transparent p-6 md:p-10">
                 <div className="max-w-md text-white">
-                  <span className="inline-block rounded-full bg-[#E6A05D] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">Promo</span>
-                  <h3 className="mt-2 font-display text-2xl font-bold text-white md:text-3xl">Musim Sekolah Baru</h3>
-                  <p className="mt-1 text-sm text-white/80">Diskon hingga 40% untuk buku & alat tulis pilihan.</p>
-                  <Button asChild size="sm" className="mt-3 bg-[#E6A05D] text-white hover:bg-[#d48f4d] border-none">
-                    <Link to="/" search={{ kategori: "buku" }}>Belanja sekarang</Link>
+                  <span className="inline-block rounded-full bg-[#E6A05D] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    Promo
+                  </span>
+                  <h3 className="mt-2 font-display text-2xl font-bold text-white md:text-3xl">
+                    Musim Sekolah Baru
+                  </h3>
+                  <p className="mt-1 text-sm text-white/80">
+                    Diskon hingga 40% untuk buku & alat tulis pilihan.
+                  </p>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="mt-3 bg-[#E6A05D] text-white hover:bg-[#d48f4d] border-none"
+                  >
+                    <Link to="/" search={{ kategori: "buku" }}>
+                      Belanja sekarang
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -248,10 +377,15 @@ function HomePage() {
       {/* PRODUCTS + FILTER */}
       <section className="container mx-auto grid gap-6 px-4 py-10 md:grid-cols-[260px_1fr]">
         {/* Sidebar */}
-        <aside className={`${showFilters ? "fixed inset-0 z-50 overflow-y-auto bg-[#FDF6E3] p-6 md:static md:z-auto md:bg-transparent md:p-0" : "hidden md:block"} space-y-6 rounded-2xl md:border md:border-[#2D4B63]/10 md:bg-white md:p-5 md:shadow-sm md:sticky md:top-24 md:self-start`}>
+        <aside
+          className={`${showFilters ? "fixed inset-0 z-50 overflow-y-auto bg-[#FDF6E3] p-6 md:static md:z-auto md:bg-transparent md:p-0" : "hidden md:block"} space-y-6 rounded-2xl md:border md:border-[#2D4B63]/10 md:bg-white md:p-5 md:shadow-sm md:sticky md:top-24 md:self-start`}
+        >
           <div className="flex items-center justify-between md:hidden">
             <h3 className="font-display text-lg font-bold text-[#2D4B63]">Filter</h3>
-            <button onClick={() => setShowFilters(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-gray-100">
+            <button
+              onClick={() => setShowFilters(false)}
+              className="grid h-9 w-9 place-items-center rounded-full hover:bg-gray-100"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -259,13 +393,29 @@ function HomePage() {
           <div>
             <h3 className="font-display text-base font-semibold text-[#2D4B63]">Rentang Harga</h3>
             <div className="mt-3 flex items-center gap-2">
-              <input type="number" min={0} value={minInput} onChange={(e) => setMinInput(e.target.value)}
-                placeholder="Min" className="h-9 w-full rounded-lg border border-[#2D4B63]/20 bg-white px-2 text-sm outline-none focus:border-[#E6A05D]" />
+              <input
+                type="number"
+                min={0}
+                value={minInput}
+                onChange={(e) => setMinInput(e.target.value)}
+                placeholder="Min"
+                className="h-9 w-full rounded-lg border border-[#2D4B63]/20 bg-white px-2 text-sm outline-none focus:border-[#E6A05D]"
+              />
               <span className="text-[#2D4B63]/50">→</span>
-              <input type="number" min={0} value={maxInput} onChange={(e) => setMaxInput(e.target.value)}
-                placeholder="Max" className="h-9 w-full rounded-lg border border-[#2D4B63]/20 bg-white px-2 text-sm outline-none focus:border-[#E6A05D]" />
+              <input
+                type="number"
+                min={0}
+                value={maxInput}
+                onChange={(e) => setMaxInput(e.target.value)}
+                placeholder="Max"
+                className="h-9 w-full rounded-lg border border-[#2D4B63]/20 bg-white px-2 text-sm outline-none focus:border-[#E6A05D]"
+              />
             </div>
-            <Button onClick={applyPrice} size="sm" className="mt-3 w-full bg-[#2D4B63] text-white hover:bg-[#1a2d3c]">
+            <Button
+              onClick={applyPrice}
+              size="sm"
+              className="mt-3 w-full bg-[#2D4B63] text-white hover:bg-[#1a2d3c]"
+            >
               Terapkan
             </Button>
           </div>
@@ -274,47 +424,76 @@ function HomePage() {
             <h3 className="font-display text-base font-semibold text-[#2D4B63]">Kategori</h3>
             <ul className="mt-3 space-y-1.5">
               <li>
-                <button onClick={() => setKategori(undefined)}
-                  className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${!search.kategori ? "bg-[#E6A05D] text-white font-bold" : "hover:bg-[#FDF6E3]"}`}>Semua</button>
+                <button
+                  onClick={() => setKategori(undefined)}
+                  className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${!search.kategori ? "bg-[#E6A05D] text-white font-bold" : "hover:bg-[#FDF6E3]"}`}
+                >
+                  Semua
+                </button>
               </li>
               {categories.map((c) => (
                 <li key={c.id}>
-                  <button onClick={() => setKategori(c.slug)}
-                    className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${search.kategori === c.slug ? "bg-[#E6A05D] text-white font-bold" : "hover:bg-[#FDF6E3]"}`}>{c.name}</button>
+                  <button
+                    onClick={() => setKategori(c.slug)}
+                    className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${search.kategori === c.slug ? "bg-[#E6A05D] text-white font-bold" : "hover:bg-[#FDF6E3]"}`}
+                  >
+                    {c.name}
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          <Button onClick={resetFilters} variant="ghost" size="sm" className="w-full text-[#2D4B63]">Reset Filter</Button>
+          <Button
+            onClick={resetFilters}
+            variant="ghost"
+            size="sm"
+            className="w-full text-[#2D4B63]"
+          >
+            Reset Filter
+          </Button>
         </aside>
 
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-display text-2xl font-bold text-[#2D4B63] md:text-3xl">
-                {search.q ? `Hasil "${search.q}"` : search.kategori ? `Kategori: ${categories.find(c => c.slug === search.kategori)?.name ?? ""}` : "Produk Pilihan"}
+                {search.q
+                  ? `Hasil "${search.q}"`
+                  : search.kategori
+                    ? `Kategori: ${categories.find((c) => c.slug === search.kategori)?.name ?? ""}`
+                    : "Produk Pilihan"}
               </h2>
               {!loading && (
                 <p className="text-xs text-[#2D4B63]/60">{products.length} produk ditemukan</p>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setShowFilters(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#2D4B63]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#2D4B63] md:hidden">
+              <button
+                onClick={() => setShowFilters(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#2D4B63]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#2D4B63] md:hidden"
+              >
                 <SlidersHorizontal className="h-3.5 w-3.5" /> Filter
               </button>
               <div className="flex items-center gap-1 rounded-full border border-[#2D4B63]/20 bg-white p-1 text-xs">
                 {(["terbaru", "termurah", "termahal"] as const).map((s) => (
-                  <button key={s} onClick={() => setSort(s)}
-                    className={`rounded-full px-3 py-1.5 capitalize transition ${activeSort === s ? "bg-[#2D4B63] text-white" : "text-[#2D4B63]/60 hover:text-[#2D4B63]"}`}>{s}</button>
+                  <button
+                    key={s}
+                    onClick={() => setSort(s)}
+                    className={`rounded-full px-3 py-1.5 capitalize transition ${activeSort === s ? "bg-[#2D4B63] text-white" : "text-[#2D4B63]/60 hover:text-[#2D4B63]"}`}
+                  >
+                    {s}
+                  </button>
                 ))}
               </div>
             </div>
           </div>
 
           {hasFilters && (
-            <button onClick={resetFilters} className="mb-3 inline-flex items-center gap-1 text-xs font-bold text-[#E6A05D] hover:underline">
+            <button
+              onClick={resetFilters}
+              className="mb-3 inline-flex items-center gap-1 text-xs font-bold text-[#E6A05D] hover:underline"
+            >
               <X className="h-3 w-3" /> Hapus semua filter
             </button>
           )}
@@ -327,15 +506,21 @@ function HomePage() {
             </div>
           ) : products.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#2D4B63]/30 bg-white p-12 text-center">
-              <p className="font-display text-lg font-bold text-[#2D4B63]">Belum ada produk yang cocok</p>
-              <p className="mt-1 text-sm text-[#2D4B63]/70">Coba ubah filter, atau jadilah yang pertama menjual!</p>
+              <p className="font-display text-lg font-bold text-[#2D4B63]">
+                Belum ada produk yang cocok
+              </p>
+              <p className="mt-1 text-sm text-[#2D4B63]/70">
+                Coba ubah filter, atau jadilah yang pertama menjual!
+              </p>
               <Button asChild className="mt-4 bg-[#E6A05D] text-white hover:bg-[#d48f4d]">
                 <Link to="/sell">Jual Sekarang</Link>
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {products.map((p) => <ProductCard key={p.id} p={p} />)}
+              {products.map((p) => (
+                <ProductCard key={p.id} p={p} />
+              ))}
             </div>
           )}
         </div>
@@ -344,7 +529,9 @@ function HomePage() {
       <footer className="mt-10 border-t border-[#2D4B63]/10 bg-[#709797]/10 py-10">
         <div className="container mx-auto grid gap-6 px-4 md:grid-cols-3">
           <div>
-            <span className="font-display text-3xl font-black text-[#2D4B63]">SE<span className="text-[#E6A05D]">KOS</span></span>
+            <span className="font-display text-3xl font-black text-[#2D4B63]">
+              SE<span className="text-[#E6A05D]">KOS</span>
+            </span>
             <p className="mt-2 max-w-xs text-sm text-[#2D4B63]/80">
               Marketplace pelajar terpercaya — beli, jual, dan saling bantu.
             </p>
@@ -353,16 +540,35 @@ function HomePage() {
             <h4 className="font-display text-sm font-bold text-[#2D4B63]">Belanja</h4>
             <ul className="mt-3 space-y-1.5 text-sm text-[#2D4B63]/70">
               {categories.slice(0, 4).map((c) => (
-                <li key={c.id}><button onClick={() => setKategori(c.slug)} className="hover:text-[#E6A05D] font-medium">{c.name}</button></li>
+                <li key={c.id}>
+                  <button
+                    onClick={() => setKategori(c.slug)}
+                    className="hover:text-[#E6A05D] font-medium"
+                  >
+                    {c.name}
+                  </button>
+                </li>
               ))}
             </ul>
           </div>
           <div>
             <h4 className="font-display text-sm font-bold text-[#2D4B63]">SEKOS</h4>
             <ul className="mt-3 space-y-1.5 text-sm text-[#2D4B63]/70 font-medium">
-              <li><Link to="/sell" className="hover:text-[#E6A05D]">Jadi Penjual</Link></li>
-              <li><Link to="/profile" className="hover:text-[#E6A05D]">Profil Saya</Link></li>
-              <li><Link to="/register" className="hover:text-[#E6A05D]">Daftar Akun</Link></li>
+              <li>
+                <Link to="/sell" className="hover:text-[#E6A05D]">
+                  Jadi Penjual
+                </Link>
+              </li>
+              <li>
+                <Link to="/profile" className="hover:text-[#E6A05D]">
+                  Profil Saya
+                </Link>
+              </li>
+              <li>
+                <Link to="/register" className="hover:text-[#E6A05D]">
+                  Daftar Akun
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

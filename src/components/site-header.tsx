@@ -9,7 +9,9 @@ export function SiteHeader() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const routerState = useRouterState();
-  const [profile, setProfile] = useState<{ display_name: string; location: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string; location: string | null } | null>(
+    null,
+  );
   const [cartCount, setCartCount] = useState(0);
   const [search, setSearch] = useState("");
 
@@ -19,18 +21,66 @@ export function SiteHeader() {
       setCartCount(0);
       return;
     }
-    supabase.from("profiles").select("display_name, location").eq("id", user.id).maybeSingle()
+    supabase
+      .from("profiles")
+      .select("display_name, location")
+      .eq("id", user.id)
+      .maybeSingle()
       .then(({ data }) => setProfile(data));
-    supabase.from("cart_items").select("id", { count: "exact", head: true }).eq("user_id", user.id)
+    supabase
+      .from("cart_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
       .then(({ count, error }) => {
         // #region agent log
-        fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K2',location:'src/components/site-header.tsx:25',message:'header cart count query resolved',data:{hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,errorDetails:error?.details ?? null,errorHint:error?.hint ?? null,count:count ?? 0,targetTable:'cart_items'},timestamp:Date.now()})}).catch(()=>{});
+        fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+          body: JSON.stringify({
+            sessionId: "186559",
+            runId: "cart-debug",
+            hypothesisId: "K2",
+            location: "src/components/site-header.tsx:25",
+            message: "header cart count query resolved",
+            data: {
+              hasError: Boolean(error),
+              errorCode: error?.code ?? null,
+              errorMessage: error?.message ?? null,
+              errorDetails: error?.details ?? null,
+              errorHint: error?.hint ?? null,
+              count: count ?? 0,
+              targetTable: "cart_items",
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
         // #endregion
         if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
-          supabase.from("chart_items").select("id", { count: "exact", head: true }).eq("user_id", user.id)
+          supabase
+            .from("chart_items")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
             .then(({ count: fallbackCount, error: fallbackError }) => {
               // #region agent log
-              fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K4',location:'src/components/site-header.tsx:31',message:'header cart count fallback query resolved',data:{hasError:Boolean(fallbackError),errorCode:fallbackError?.code ?? null,errorMessage:fallbackError?.message ?? null,count:fallbackCount ?? 0,targetTable:'chart_items'},timestamp:Date.now()})}).catch(()=>{});
+              fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+                body: JSON.stringify({
+                  sessionId: "186559",
+                  runId: "cart-debug",
+                  hypothesisId: "K4",
+                  location: "src/components/site-header.tsx:31",
+                  message: "header cart count fallback query resolved",
+                  data: {
+                    hasError: Boolean(fallbackError),
+                    errorCode: fallbackError?.code ?? null,
+                    errorMessage: fallbackError?.message ?? null,
+                    count: fallbackCount ?? 0,
+                    targetTable: "chart_items",
+                  },
+                  timestamp: Date.now(),
+                }),
+              }).catch(() => {});
               // #endregion
               setCartCount(fallbackCount ?? 0);
             });
@@ -42,16 +92,23 @@ export function SiteHeader() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/", search: { q: search || undefined, kategori: undefined, min: undefined, max: undefined, sort: undefined } });
+    navigate({
+      to: "/",
+      search: {
+        q: search || undefined,
+        kategori: undefined,
+        min: undefined,
+        max: undefined,
+        sort: undefined,
+      },
+    });
   };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center gap-3 px-4">
         <Link to="/" className="flex items-center gap-2">
-          <span className="font-display text-2xl font-bold tracking-tight text-primary">
-            SEKOS
-          </span>
+          <span className="font-display text-2xl font-bold tracking-tight text-primary">SEKOS</span>
         </Link>
 
         <form onSubmit={handleSearch} className="relative ml-2 hidden flex-1 max-w-md md:block">
@@ -74,7 +131,9 @@ export function SiteHeader() {
           {user ? (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                <Link to="/sell"><Plus className="h-4 w-4" /> Jual</Link>
+                <Link to="/sell">
+                  <Plus className="h-4 w-4" /> Jual
+                </Link>
               </Button>
               <Button asChild variant="ghost" size="icon" className="relative">
                 <Link to="/cart" aria-label="Keranjang">
@@ -87,7 +146,9 @@ export function SiteHeader() {
                 </Link>
               </Button>
               <Button asChild variant="ghost" size="icon">
-                <Link to="/profile" aria-label="Profil"><UserIcon className="h-5 w-5" /></Link>
+                <Link to="/profile" aria-label="Profil">
+                  <UserIcon className="h-5 w-5" />
+                </Link>
               </Button>
               <Button variant="ghost" size="icon" onClick={() => signOut()} aria-label="Keluar">
                 <LogOut className="h-5 w-5" />
@@ -98,7 +159,11 @@ export function SiteHeader() {
               <Button asChild variant="ghost" size="sm">
                 <Link to="/login">Masuk</Link>
               </Button>
-              <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button
+                asChild
+                size="sm"
+                className="bg-accent text-accent-foreground hover:bg-accent/90"
+              >
                 <Link to="/register">Daftar</Link>
               </Button>
             </>

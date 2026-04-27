@@ -48,7 +48,9 @@ export function ProductCard({ p }: { p: ProductCardData }) {
         {/* heart */}
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); }}
+          onClick={(e) => {
+            e.preventDefault();
+          }}
           className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-card/90 text-muted-foreground shadow-soft backdrop-blur transition hover:bg-card hover:text-accent"
           aria-label="Suka"
         >
@@ -62,17 +64,19 @@ export function ProductCard({ p }: { p: ProductCardData }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-1 p-3">
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{p.title}</h3>
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+          {p.title}
+        </h3>
         <p className="font-display text-lg font-bold text-accent">{formatRupiah(p.price)}</p>
         <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
           {p.location ? (
             <span className="flex items-center gap-1 truncate">
               <MapPin className="h-3 w-3 shrink-0" /> {p.location}
             </span>
-          ) : <span />}
-          {p.seller?.display_name && (
-            <span className="truncate">{p.seller.display_name}</span>
+          ) : (
+            <span />
           )}
+          {p.seller?.display_name && <span className="truncate">{p.seller.display_name}</span>}
         </div>
       </div>
     </Link>

@@ -29,7 +29,10 @@ function CartPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate({ to: "/login" }); return; }
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
     refresh();
   }, [user, authLoading]);
 
@@ -42,7 +45,27 @@ function CartPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     // #region agent log
-    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K3',location:'src/routes/cart.tsx:44',message:'cart refresh query resolved',data:{hasError:Boolean(error),errorCode:error?.code ?? null,errorMessage:error?.message ?? null,errorDetails:error?.details ?? null,errorHint:error?.hint ?? null,rowsCount:(data ?? []).length,targetTable:'cart_items'},timestamp:Date.now()})}).catch(()=>{});
+    fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+      body: JSON.stringify({
+        sessionId: "186559",
+        runId: "cart-debug",
+        hypothesisId: "K3",
+        location: "src/routes/cart.tsx:44",
+        message: "cart refresh query resolved",
+        data: {
+          hasError: Boolean(error),
+          errorCode: error?.code ?? null,
+          errorMessage: error?.message ?? null,
+          errorDetails: error?.details ?? null,
+          errorHint: error?.hint ?? null,
+          rowsCount: (data ?? []).length,
+          targetTable: "cart_items",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
     // #endregion
     if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
       const fallback = await supabase
@@ -53,7 +76,25 @@ function CartPage() {
       data = fallback.data as typeof data;
       error = fallback.error;
       // #region agent log
-      fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'cart-debug',hypothesisId:'K4',location:'src/routes/cart.tsx:54',message:'cart refresh fallback query resolved',data:{hasError:Boolean(fallback.error),errorCode:fallback.error?.code ?? null,errorMessage:fallback.error?.message ?? null,rowsCount:(fallback.data ?? []).length,targetTable:'chart_items'},timestamp:Date.now()})}).catch(()=>{});
+      fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+        body: JSON.stringify({
+          sessionId: "186559",
+          runId: "cart-debug",
+          hypothesisId: "K4",
+          location: "src/routes/cart.tsx:54",
+          message: "cart refresh fallback query resolved",
+          data: {
+            hasError: Boolean(fallback.error),
+            errorCode: fallback.error?.code ?? null,
+            errorMessage: fallback.error?.message ?? null,
+            rowsCount: (fallback.data ?? []).length,
+            targetTable: "chart_items",
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
       // #endregion
     }
     setItems((data ?? []) as unknown as CartRow[]);
@@ -62,18 +103,45 @@ function CartPage() {
 
   const changeQty = async (rowId: string, qty: number) => {
     // #region agent log
-    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'security-audit',hypothesisId:'S1',location:'src/routes/cart.tsx:49',message:'changeQty called',data:{hasUser:Boolean(user),rowId,qty},timestamp:Date.now()})}).catch(()=>{});
+    fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+      body: JSON.stringify({
+        sessionId: "186559",
+        runId: "security-audit",
+        hypothesisId: "S1",
+        location: "src/routes/cart.tsx:49",
+        message: "changeQty called",
+        data: { hasUser: Boolean(user), rowId, qty },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
     // #endregion
     if (qty < 1) return;
     const { error } = await supabase.from("cart_items").update({ quantity: qty }).eq("id", rowId);
     if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
-      await supabase.from("chart_items").update({ quantity: qty } as never).eq("id", rowId);
+      await supabase
+        .from("chart_items")
+        .update({ quantity: qty } as never)
+        .eq("id", rowId);
     }
     refresh();
   };
   const remove = async (rowId: string) => {
     // #region agent log
-    fetch('http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'186559'},body:JSON.stringify({sessionId:'186559',runId:'security-audit',hypothesisId:'S1',location:'src/routes/cart.tsx:55',message:'remove called',data:{hasUser:Boolean(user),rowId},timestamp:Date.now()})}).catch(()=>{});
+    fetch("http://127.0.0.1:7410/ingest/1bad6591-db48-487e-a518-f50e865918d8", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "186559" },
+      body: JSON.stringify({
+        sessionId: "186559",
+        runId: "security-audit",
+        hypothesisId: "S1",
+        location: "src/routes/cart.tsx:55",
+        message: "remove called",
+        data: { hasUser: Boolean(user), rowId },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
     // #endregion
     const { error } = await supabase.from("cart_items").delete().eq("id", rowId);
     if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
@@ -105,17 +173,31 @@ function CartPage() {
           <div className="mt-6 grid gap-6 md:grid-cols-[1fr_320px]">
             <div className="space-y-3">
               {items.map((row) => (
-                <div key={row.id} className="flex gap-4 rounded-2xl border border-border bg-card p-3 shadow-soft">
-                  <Link to="/product/$id" params={{ id: row.product?.id ?? "" }} className="shrink-0">
+                <div
+                  key={row.id}
+                  className="flex gap-4 rounded-2xl border border-border bg-card p-3 shadow-soft"
+                >
+                  <Link
+                    to="/product/$id"
+                    params={{ id: row.product?.id ?? "" }}
+                    className="shrink-0"
+                  >
                     {row.product?.image_url ? (
-                      <img src={row.product.image_url} alt={row.product.title} className="h-24 w-24 rounded-lg object-cover" />
+                      <img
+                        src={row.product.image_url}
+                        alt={row.product.title}
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
                     ) : (
                       <div className="h-24 w-24 rounded-lg bg-gradient-cream" />
                     )}
                   </Link>
                   <div className="flex flex-1 flex-col">
-                    <Link to="/product/$id" params={{ id: row.product?.id ?? "" }}
-                      className="line-clamp-2 font-medium text-foreground hover:text-accent">
+                    <Link
+                      to="/product/$id"
+                      params={{ id: row.product?.id ?? "" }}
+                      className="line-clamp-2 font-medium text-foreground hover:text-accent"
+                    >
                       {row.product?.title}
                     </Link>
                     <p className="mt-1 font-display text-lg font-bold text-accent">
@@ -123,15 +205,24 @@ function CartPage() {
                     </p>
                     <div className="mt-auto flex items-center gap-2">
                       <div className="flex items-center gap-1 rounded-full border border-border">
-                        <button onClick={() => changeQty(row.id, row.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary">
+                        <button
+                          onClick={() => changeQty(row.id, row.quantity - 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary"
+                        >
                           <Minus className="h-3 w-3" />
                         </button>
                         <span className="w-8 text-center text-sm font-medium">{row.quantity}</span>
-                        <button onClick={() => changeQty(row.id, row.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary">
+                        <button
+                          onClick={() => changeQty(row.id, row.quantity + 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary"
+                        >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
-                      <button onClick={() => remove(row.id)} className="ml-auto rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                      <button
+                        onClick={() => remove(row.id)}
+                        className="ml-auto rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -149,10 +240,15 @@ function CartPage() {
               <div className="border-t border-border pt-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Total</span>
-                  <span className="font-display text-2xl font-bold text-accent">{formatRupiah(total)}</span>
+                  <span className="font-display text-2xl font-bold text-accent">
+                    {formatRupiah(total)}
+                  </span>
                 </div>
               </div>
-              <Button className="h-11 w-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-warm" onClick={() => toast.info("Pembayaran akan tersedia di iterasi berikutnya")}>
+              <Button
+                className="h-11 w-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-warm"
+                onClick={() => toast.info("Pembayaran akan tersedia di iterasi berikutnya")}
+              >
                 Lanjut ke Pembayaran
               </Button>
             </aside>
