@@ -8,7 +8,9 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="font-display text-7xl font-bold text-primary">404</h1>
-        <h2 className="mt-4 font-display text-xl font-semibold text-foreground">Halaman tidak ditemukan</h2>
+        <h2 className="mt-4 font-display text-xl font-semibold text-foreground">
+          Halaman tidak ditemukan
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Halaman yang Anda cari tidak ada atau sudah dipindahkan.
         </p>
@@ -31,16 +33,26 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "SEKOS — Marketplace Pelajar Terpercaya" },
-      { name: "description", content: "SEKOS adalah marketplace untuk pelajar — jual & beli buku, alat tulis, seragam, dan kebutuhan sekolah lainnya dengan aman." },
+      {
+        name: "description",
+        content:
+          "SEKOS adalah marketplace untuk pelajar — jual & beli buku, alat tulis, seragam, dan kebutuhan sekolah lainnya dengan aman.",
+      },
       { property: "og:title", content: "SEKOS — Marketplace Pelajar" },
-      { property: "og:description", content: "Jual & beli kebutuhan sekolah dengan mudah dan terpercaya." },
+      {
+        property: "og:description",
+        content: "Jual & beli kebutuhan sekolah dengan mudah dan terpercaya.",
+      },
       { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,

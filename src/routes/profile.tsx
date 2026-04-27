@@ -31,17 +31,30 @@ function ProfilePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate({ to: "/login" }); return; }
-    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setProfile(data as ProfileData);
-          setForm({ display_name: data.display_name ?? data.username ?? "", bio: data.bio ?? "", location: data.location ?? "" });
+          setForm({
+            display_name: data.display_name ?? data.username ?? "",
+            bio: data.bio ?? "",
+            location: data.location ?? "",
+          });
         }
       });
-    supabase.from("products")
+    supabase
+      .from("products")
       .select("id, title, price, grade, image_url, location")
-      .eq("seller_id", user.id).order("created_at", { ascending: false })
+      .eq("seller_id", user.id)
+      .order("created_at", { ascending: false })
       .then(({ data }) => setProducts((data ?? []) as ProductCardData[]));
   }, [user, authLoading]);
 
@@ -50,17 +63,22 @@ function ProfilePage() {
     setSaving(true);
     const { error } = await supabase.from("profiles").update(form).eq("id", user.id);
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Profil tersimpan!");
     setEditing(false);
-    setProfile((p) => p ? { ...p, ...form } : p);
+    setProfile((p) => (p ? { ...p, ...form } : p));
   };
 
   if (!profile) {
     return (
       <div className="min-h-screen">
         <SiteHeader />
-        <div className="container mx-auto p-8"><div className="h-40 animate-pulse rounded-2xl bg-secondary/60" /></div>
+        <div className="container mx-auto p-8">
+          <div className="h-40 animate-pulse rounded-2xl bg-secondary/60" />
+        </div>
       </div>
     );
   }
@@ -104,22 +122,36 @@ function ProfilePage() {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Nama Tampilan</label>
-                <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent" />
+                <input
+                  value={form.display_name}
+                  onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Lokasi</label>
-                <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
+                <input
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
                   placeholder="Jakarta Selatan"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent" />
+                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+                />
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-sm font-medium">Bio</label>
-                <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={3}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
+                <textarea
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+                />
               </div>
               <div className="md:col-span-2">
-                <Button onClick={save} disabled={saving} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button
+                  onClick={save}
+                  disabled={saving}
+                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                >
                   {saving ? "Menyimpan…" : "Simpan"}
                 </Button>
               </div>
@@ -133,7 +165,9 @@ function ProfilePage() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-2xl font-bold text-primary">Produk Saya</h2>
             <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Link to="/sell"><Plus className="h-4 w-4" /> Jual Baru</Link>
+              <Link to="/sell">
+                <Plus className="h-4 w-4" /> Jual Baru
+              </Link>
             </Button>
           </div>
           {products.length === 0 ? (
@@ -142,7 +176,9 @@ function ProfilePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {products.map((p) => <ProductCard key={p.id} p={p} />)}
+              {products.map((p) => (
+                <ProductCard key={p.id} p={p} />
+              ))}
             </div>
           )}
         </div>
