@@ -111,13 +111,14 @@ function SellPage() {
     file: File,
     maxRetries: number = 2,
   ): Promise<string | null> => {
+    if (!user) return null;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const fileName = `${user.id}/${Date.now()}-${attempt}-${encodeURIComponent(
           file.name.replace(/\s+/g, "-"),
         )}`;
         console.log(`🔄 Attempt ${attempt + 1}: Uploading to ${fileName}`);
-        
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from(IMAGE_BUCKET)
           .upload(fileName, file, { cacheControl: "3600", upsert: false });
@@ -125,7 +126,7 @@ function SellPage() {
         if (uploadError) {
           console.error(`❌ Upload error on attempt ${attempt + 1}:`, uploadError);
           console.error("Error details:", {
-            code: uploadError.code,
+            statusCode: uploadError.statusCode,
             message: uploadError.message,
             name: uploadError.name,
           });
@@ -141,7 +142,7 @@ function SellPage() {
         const { data: publicUrlData } = supabase.storage
           .from(IMAGE_BUCKET)
           .getPublicUrl(uploadData.path);
-          
+
         if (publicUrlData?.publicUrl) {
           console.log(`✅ Public URL generated: ${publicUrlData.publicUrl}`);
           return publicUrlData.publicUrl;

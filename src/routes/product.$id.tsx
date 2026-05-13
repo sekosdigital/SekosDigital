@@ -86,7 +86,7 @@ function ProductDetail() {
         ) {
           const fallback = await supabase
             .from("products")
-            .select("id, title:name, description, price, image_url")
+            .select("id, title, description, price, image_url")
             .eq("id", id)
             .maybeSingle();
           // #region agent log
@@ -176,7 +176,7 @@ function ProductDetail() {
     let finalError = error;
     if (error?.code === "PGRST205" && error.message.includes("public.cart_items")) {
       const fallback = await supabase
-        .from("chart_items")
+        .from("cart_items")
         .upsert({ user_id: user.id, product_id: product.id, quantity: 1 } as never, {
           onConflict: "user_id,product_id",
         });
